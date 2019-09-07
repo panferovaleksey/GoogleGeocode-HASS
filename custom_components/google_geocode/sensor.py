@@ -28,6 +28,7 @@ CONF_OPTIONS = 'options'
 CONF_DISPLAY_ZONE = 'display_zone'
 CONF_ATTRIBUTION = "Data provided by maps.google.com"
 CONF_GRAVATAR = 'gravatar'
+CONF_LANGUAGE = 'language'
 
 ATTR_STREET_NUMBER = 'Street Number'
 ATTR_STREET = 'Street'
@@ -43,6 +44,7 @@ DEFAULT_NAME = 'Google Geocode'
 DEFAULT_OPTION = 'street, city'
 DEFAULT_DISPLAY_ZONE = 'display'
 DEFAULT_KEY = 'no key'
+DEFAULT_LANGUAGE = 'en'
 current = '0,0'
 zone_check = 'a'
 SCAN_INTERVAL = timedelta(seconds=60)
@@ -56,6 +58,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
     vol.Optional(CONF_SCAN_INTERVAL, default=SCAN_INTERVAL):
         cv.time_period,
+    vol.Optional(CONF_LANGUAGE, default=DEFAULT_LANGUAGE): cv.string,
 })
 
 TRACKABLE_DOMAINS = ['device_tracker', 'sensor', 'person']
@@ -67,15 +70,16 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     origin = config.get(CONF_ORIGIN)
     options = config.get(CONF_OPTIONS)
     display_zone = config.get(CONF_DISPLAY_ZONE)
-    gravatar = config.get(CONF_GRAVATAR) 
+    gravatar = config.get(CONF_GRAVATAR)
+    language = config.get(CONF_LANGUAGE)
 
-    add_devices([GoogleGeocode(hass, origin, name, api_key, options, display_zone, gravatar)])
+    add_devices([GoogleGeocode(hass, origin, name, api_key, options, display_zone, gravatar, language)])
 
 
 class GoogleGeocode(Entity):
     """Representation of a Google Geocode Sensor."""
 
-    def __init__(self, hass, origin, name, api_key, options, display_zone, gravatar):
+    def __init__(self, hass, origin, name, api_key, options, display_zone, gravatar, language):
         """Initialize the sensor."""
         self._hass = hass
         self._name = name
@@ -84,6 +88,7 @@ class GoogleGeocode(Entity):
         self._display_zone = display_zone.lower()
         self._state = "Awaiting Update"
         self._gravatar = gravatar
+        self._language = language
 
         self._street_number = None
         self._street = None
@@ -175,9 +180,9 @@ class GoogleGeocode(Entity):
             current = lat
             self._reset_attributes()
             if self._api_key == 'no key':
-                url = "https://maps.google.com/maps/api/geocode/json?latlng=" + lat
+                url = "https://maps.google.com/maps/api/geocode/json?latlng=" + lat + "&language=" + self._language
             else:
-                url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=" + lat + "&key=" + self._api_key
+                url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=" + lat + "&key=" + self._api_key + "&language=" + self._language
             response = get(url)
             json_input = response.text
             decoded = json.loads(json_input)
